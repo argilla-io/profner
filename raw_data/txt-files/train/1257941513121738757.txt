@@ -1,0 +1,6 @@
+[HILO]
+Ayer hicimos público un recurso online para poder comparar las medidas tomadas por países europeos vs. COVID-19
+
+Su núcleo es una tabla activa que vincula medidas a fechas, publicaciones en boletín oficial y fallecimientos
+
+Respuesta a algunas dudas a continuación: https://t.co/6qmpNIzzwm

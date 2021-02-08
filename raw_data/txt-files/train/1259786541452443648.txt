@@ -1,0 +1,5 @@
+Datos Coronavirus en España a Lunes 11 de Mayo:
+
+227.436 casos confirmados PCR (son 3.046 más que ayer, aunque 2.721 proceden de Cataluña y no son de las últimas 24h) (+373 +0,16% de casos nuevos)
+26.744 fallecidos (+123 +0,46%)
+137.139 altas (+973 +0,71%)

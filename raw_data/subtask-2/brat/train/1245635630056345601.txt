@@ -1,0 +1,1 @@
+Si no se hace lectura tiene que ser lectura = 0 en este momento aplicar lecturas estimadas no toca

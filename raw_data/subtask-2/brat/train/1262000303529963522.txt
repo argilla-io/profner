@@ -1,0 +1,16 @@
+SITUACIÓN HOSPITALES #Burgos
+DATOS #COVID19 17 mayo
+
+CASOS CONFIRMADOS
+    TOTAL: 2.746 (+12)
+    PCR+: 1958 (+13)
+
+HOSPITALIZADOS EN PLANTA
+    #HUBU 32 (+2)
+    #MirandaDeEbro 3 (=)
+    #ArandaDeDuero 3 (=)
+
+EN UCI 11 (-1)
+
+7o DÍA SEGUIDO SIN FALLECIMIENTOS
+TOTAL: 205 (=) https://t.co/8tqQpVPSOB
