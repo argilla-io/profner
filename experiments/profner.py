@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
-from biome.text import Dataset, Pipeline, TrainerConfiguration
+from biome.text import Dataset
 from biome.text.hpo import TuneExperiment
-import itertools
-import os
 from ray import tune
 
 
@@ -26,47 +24,54 @@ valid_ds.rename_column_("classification_label", "labels")
 # In[ ]:
 
 
-get_ipython().system('wget https://zenodo.org/record/4449930/files/cbow_cased.tar.gz')
+# get_ipython().system('wget https://zenodo.org/record/4449930/files/cbow_cased.tar.gz')
 
 
 # In[ ]:
 
 
-get_ipython().system('tar -xzf cbow_cased.tar.gz')
+# get_ipython().system('tar -xzf cbow_cased.tar.gz')
 
 
 # In[ ]:
 
 
-get_ipython().system('head cased/covid_19_es_twitter_cbow_cased.vec')
-
-
-# In[ ]:
-
+# get_ipython().system('head cased/covid_19_es_twitter_cbow_cased.vec')
 
 profner = {
     "name": "profner",
     "features": {
         "word": {
             "embedding_dim": 300, 
-            #"weights_file": "/content/cased/covid_19_es_twitter_cbow_cased.vec",
+            "weights_file": "/home/david/recognai/projects/ProfNER/covid_19_es_twitter_cbow_cased.vec",
             "trainable": True,
-        }
+        },
+        'char': {
+            'embedding_dim': tune.choice([32, 64, 128]),
+            'lowercase_characters': tune.choice([True, False]),
+            'encoder': {
+                'bidirectional': True,
+                'hidden_size': tune.choice([32, 64, 128]),
+                'num_layers': 1,
+                'type': tune.choice(['gru', 'lstm']),
+            },
+            'dropout': tune.uniform(0, 0.5),
+        },
     },
     "encoder": {
-        "type": "gru",
-        "num_layers": 1,
+        "type": tune.choice(["gru", "lstm"]),
+        "num_layers": tune.choice([1, 2]),
         "bidirectional": True,
-        "hidden_size": 128,
+        "hidden_size": tune.choice([64, 128, 256]),
     },
     "head": {
         "type": "ProfNer",
-        "classification_labels": train_ds.unique("labels"),
+        "classification_labels": ['1', '0'],
         "classification_pooler": {
-            "type": "gru",
+            "type": tune.choice(["gru", "lstm"]),
             "num_layers": 1,
             "bidirectional": True,
-            "hidden_size": 64,
+            "hidden_size": tune.choice([32, 64, 128]),
         },
         "ner_feedforward": {
             "activations": ["relu"],
@@ -74,27 +79,13 @@ profner = {
             "hidden_dims": [128],
             "num_layers": 1,
         },
-        "ner_tags": list(set(itertools.chain.from_iterable(train_ds["tags"]))),
+        "ner_tags": ['O', 'B-PROFESION', 'I-SITUACION_LABORAL', 'I-PROFESION', 'B-SITUACION_LABORAL'],
         "ner_tags_encoding": "BIO",
-        "dropout": 0.1,
+        "dropout": tune.uniform(0, 0.5),
     },
 }
 
-
 # In[ ]:
-
-
-pipeline = Pipeline.from_config(profner)
-
-
-# In[ ]:
-
-
-pipeline.predict(["test", "this"])
-
-
-# In[ ]:
-
 
 trainer_config = dict(
     optimizer={
@@ -105,8 +96,8 @@ trainer_config = dict(
     linear_decay=False,
     warmup_steps=tune.randint(0, 200),
     training_size=len(train_ds),
-    batch_size=tune.choice([4, 8, 16]),
-    num_epochs=tune.choice([3, 4, 5]),
+    batch_size=16,
+    num_epochs=5,
     validation_metric="+ner/f1-measure-overall"
 )
 
@@ -120,7 +111,7 @@ from ray.tune.suggest.hyperopt import HyperOptSearch
 # In[ ]:
 
 
-hyperopt = HyperOptSearch(metric="validation_ner/f1-measure-overall", mode="max", n_initial_points=2)
+hyperopt = HyperOptSearch(metric="validation_ner/f1-measure-overall", mode="max")
 
 
 # In[ ]:
@@ -132,7 +123,7 @@ random_search = TuneExperiment(
     train_dataset=train_ds.select(range(32)),
     valid_dataset=valid_ds.select(range(32)),
     name="profner",
-    num_samples=20,
+    num_samples=2,
     local_dir="tune_runs",
     resources_per_trial={"cpu": 5, "gpu": 0},
 )
@@ -148,12 +139,6 @@ analysis = tune.run(
     search_alg=hyperopt,
     metric="validation_ner/f1-measure-overall", 
     mode="max",
-    progress_reporter=tune.JupyterNotebookReporter(overwrite=True)
+    progress_reporter=tune.CLIReporter(),
+    # progress_reporter=tune.JupyterNotebookReporter(overwrite=True)
 )
-
-
-# In[ ]:
-
-
-
-
