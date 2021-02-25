@@ -119,7 +119,7 @@ analysis = tune.run(
     ),
     config={
         "wandb": {
-            "project": "test_tune_wandb",
+            "project": "profner_pbt",
             "log_config": True,
             "api_key": "505a6f09e4834d95e30906e7a7f006a3e686c448",
         },
