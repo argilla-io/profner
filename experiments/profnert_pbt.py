@@ -81,6 +81,9 @@ def trainable(config, checkpoint_dir: str = None, train_data_path: str = None, v
         max_epochs=5,
         gpus=1,
         progress_bar_refresh_rate=0,
+        checkpoint_callback=False,
+        limit_train_batches=0.05,
+        limit_val_batches=0.05,
     )
 
     if checkpoint_dir:
@@ -105,10 +108,10 @@ scheduler = PopulationBasedTraining(
     mode="max",
     perturbation_interval=1,
     hyperparam_mutations={
-        "lr": tune.loguniform(1e-4, 1e-1),
-        "weight_decay": tune.loguniform(1e-3, 1e-1)
+        "lr": tune.loguniform(1e-6, 1e-3),
+        "weight_decay": tune.loguniform(1e-3, 1e-1),
     },
-    synch=False,
+    synch=True,
 )
 
 analysis = tune.run(
@@ -124,11 +127,15 @@ analysis = tune.run(
             "api_key": "505a6f09e4834d95e30906e7a7f006a3e686c448",
         },
     },
-    num_samples=3,
+    num_samples=2,
     scheduler=scheduler,
+    keep_checkpoints_num=1,
     checkpoint_score_attr="valid_ner/f1-measure-overall",
-    progress_reporter=tune.JupyterNotebookReporter(overwrite=True),
+    progress_reporter=tune.CLIReporter(
+        parameter_columns=["lr", "weight_decay"],
+        metric_columns=["iter", "valid_classification/accuracy", "valid_ner/f1-measure-overall"],
+    ),
     loggers=DEFAULT_LOGGERS + (WandbLogger,),
-    resources_per_trial={"cpu": 2, "gpu": 0.5},
+    resources_per_trial={"cpu": 2, "gpu": 1},
     local_dir="ray_tune_pbt",
 )
