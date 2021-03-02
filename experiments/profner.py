@@ -79,11 +79,11 @@ trainer_config = dict(
         "lr": tune.loguniform(1e-4, 1e-1),
         "weight_decay": tune.loguniform(1e-3, 1e-1)
     },
-    linear_decay=False,
+    linear_decay=True,
     warmup_steps=tune.randint(0, 200),
     training_size=len(train_ds),
     batch_size=tune.choice([8, 16, 32]),
-    num_epochs=5,
+    num_epochs=tune.choice([4, 5, 6, 7]),
     validation_metric="+ner/f1-measure-overall"
 )
 
@@ -91,8 +91,8 @@ trainer_config = dict(
 # In[ ]:
 
 
-# from ray.tune.suggest.hyperopt import HyperOptSearch
-# search_alg = HyperOptSearch(metric="validation_ner/f1-measure-overall", mode="max")
+from ray.tune.suggest.hyperopt import HyperOptSearch
+search_alg = HyperOptSearch(metric="validation_ner/f1-measure-overall", mode="max")
 
 # does not support integers
 # from ray.tune.suggest.bayesopt import BayesOptSearch
@@ -125,7 +125,7 @@ analysis = tune.run(
     random_search,
     config=random_search.config,
     scheduler=tune.schedulers.ASHAScheduler(),
-    # search_alg=search_alg,
+    search_alg=search_alg,
     metric="validation_ner/f1-measure-overall", 
     mode="max",
     progress_reporter=tune.CLIReporter(

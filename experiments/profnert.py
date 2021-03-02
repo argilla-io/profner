@@ -6,18 +6,17 @@ from biome.text.hpo import TuneExperiment, TuneMetricsLogger
 from biome.text.loggers import is_wandb_installed_and_logged_in, WandBLogger
 from ray import tune
 
-
 # In[ ]:
 
 
-# train_ds = Dataset.from_json("/home/ec2-user/biome/profner/preprocessing_inference/train_v2.json")
-# valid_ds = Dataset.from_json("/home/ec2-user/biome/profner/preprocessing_inference/valid_v2.json")
-train_ds = Dataset.from_json(
-    "/home/david/recognai//projects/ProfNER/profner/preprocessing_inference/train_v2.json"
-)
-valid_ds = Dataset.from_json(
-    "/home/david/recognai//projects/ProfNER/profner/preprocessing_inference/valid_v2.json"
-)
+train_ds = Dataset.from_json("/home/ec2-user/biome/profner/preprocessing_inference/train_v2.json")
+valid_ds = Dataset.from_json("/home/ec2-user/biome/profner/preprocessing_inference/valid_v2.json")
+#train_ds = Dataset.from_json(
+#    "/home/david/recognai//projects/ProfNER/profner/preprocessing_inference/train_v2.json"
+#)
+#valid_ds = Dataset.from_json(
+#    "/home/david/recognai//projects/ProfNER/profner/preprocessing_inference/valid_v2.json"
+#)
 
 
 # In[ ]:
@@ -30,8 +29,8 @@ valid_ds.rename_column_("classification_label", "labels")
 
 
 # In[ ]:
-# transformers_model: str = "dccuchile/bert-base-spanish-wwm-cased"
-transformers_model: str = "prajjwal1/bert-tiny"
+transformers_model: str = "dccuchile/bert-base-spanish-wwm-cased"
+# transformers_model: str = "prajjwal1/bert-tiny"
 
 profnert = {
     "name": "profnert",
@@ -66,23 +65,26 @@ trainer_config = dict(
         "weight_decay": tune.loguniform(1e-3, 1e-1),
     },
     linear_decay=True,
-    warmup_steps=tune.uniform(0, 200),
-    # batch_size=tune.choice([8, 16, 32]),
-    batch_size=tune.uniform(1, 4),
-    # num_epochs=tune.choice([3, 4, 5]),
-    num_epochs=tune.uniform(3, 6),
+    warmup_steps=tune.randint(0, 200),
+    # BayesOpt does not support integers, these are a workaround
+    # warmup_steps=tune.uniform(0, 200),
+    batch_size=tune.choice([8, 16]),
+    # batch_size=tune.uniform(1, 4),
+    num_epochs=tune.choice([3, 4, 5]),
+    # num_epochs=tune.uniform(3, 6),
     validation_metric="+valid_ner/f1-measure-overall",
+    num_serialized_models_to_keep=0,
 )
 
-# from ray.tune.suggest.hyperopt import HyperOptSearch
-# search_alg = HyperOptSearch(metric="validation_ner/f1-measure-overall", mode="max")
+from ray.tune.suggest.hyperopt import HyperOptSearch
+search_alg = HyperOptSearch(metric="validation_valid_ner/f1-measure-overall", mode="max")
 
 # does not support integers
-from ray.tune.suggest.bayesopt import BayesOptSearch
+#from ray.tune.suggest.bayesopt import BayesOptSearch
 
-search_alg = BayesOptSearch(
-    metric="validation_valid_ner/f1-measure-overall", mode="max"
-)
+#search_alg = BayesOptSearch(
+#    metric="validation_valid_ner/f1-measure-overall", mode="max"
+#)
 
 # ray2.0.0 does not use the gpu ...
 # from ray.tune.suggest.hebo import HEBOSearch
@@ -153,10 +155,10 @@ hpo_experiment = TuneExperiment(
     train_dataset=train_ds,
     valid_dataset=valid_ds,
     name="profner_transformers",
-    num_samples=2,
+    num_samples=100,
     local_dir="tune_runs",
-    resources_per_trial={"cpu": 1, "gpu": 0},
-    trainable=default_trainable,
+    resources_per_trial={"cpu": 2, "gpu": 1},
+    # trainable=default_trainable,
 )
 
 
@@ -178,5 +180,5 @@ analysis = tune.run(
         parameter_columns=["trainer.optimizer.lr"],
     ),
     # progress_reporter=tune.JupyterNotebookReporter(overwrite=True)
-    verbose=2,
+    verbose=1,
 )

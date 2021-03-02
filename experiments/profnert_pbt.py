@@ -1,6 +1,7 @@
 from biome.text import Dataset, Pipeline, Trainer, VocabularyConfiguration
 from pathlib import Path
 
+import ray
 from ray import tune
 from ray.tune.integration.pytorch_lightning import TuneReportCheckpointCallback
 import os
@@ -22,6 +23,7 @@ train_ds.save_to_disk(train_path.absolute())
 
 valid_path = Path("./valid_v2_data")
 valid_ds.save_to_disk(valid_path.absolute())
+
 
 
 def trainable(config, checkpoint_dir: str = None, train_data_path: str = None, valid_data_path: str = None):
@@ -82,8 +84,8 @@ def trainable(config, checkpoint_dir: str = None, train_data_path: str = None, v
         gpus=1,
         progress_bar_refresh_rate=0,
         checkpoint_callback=False,
-        limit_train_batches=0.05,
-        limit_val_batches=0.05,
+        limit_train_batches=0.1,
+        limit_val_batches=0.1,
     )
 
     if checkpoint_dir:
@@ -127,7 +129,7 @@ analysis = tune.run(
             "api_key": "505a6f09e4834d95e30906e7a7f006a3e686c448",
         },
     },
-    num_samples=2,
+    num_samples=4,
     scheduler=scheduler,
     keep_checkpoints_num=1,
     checkpoint_score_attr="valid_ner/f1-measure-overall",
@@ -135,7 +137,7 @@ analysis = tune.run(
         parameter_columns=["lr", "weight_decay"],
         metric_columns=["iter", "valid_classification/accuracy", "valid_ner/f1-measure-overall"],
     ),
-    loggers=DEFAULT_LOGGERS + (WandbLogger,),
+    loggers=DEFAULT_LOGGERS,# + (WandbLogger,),
     resources_per_trial={"cpu": 2, "gpu": 1},
     local_dir="ray_tune_pbt",
 )
