@@ -12,7 +12,7 @@ Scripts used to run the HPOs on a AWS machine
 
 Failed attempt to run a PBT
 
-### final_rnn_model, final_transformer_model 
+### final_rnn_model, final_transformer_model (not committed due to the file sizes)
 
-Folder containing the final submitted models (not committed due to the file sizes).
+Folder containing the final submitted models.
 See the `..preprocessing_inference/inference.ipynb` for the usage of the models.
