@@ -5,14 +5,8 @@ from biome.text.hpo import TuneExperiment
 from ray import tune
 
 
-# In[ ]:
-
-
 train_ds = Dataset.from_json("/home/ec2-user/biome/profner/preprocessing_inference/train_v1.json")
 valid_ds = Dataset.from_json("/home/ec2-user/biome/profner/preprocessing_inference/valid_v1.json")
-
-
-# In[ ]:
 
 
 train_ds.rename_column_("tags_bio", "tags")
@@ -21,9 +15,9 @@ train_ds.rename_column_("classification_label", "labels")
 valid_ds.rename_column_("classification_label", "labels")
 
 
-# In[ ]:
-
-
+# This is the config of a second HPO run, a
+# fter a first HPO run we fixed obviously better choices like:
+# the weights_file, lowercase_characters, some RNN types and num_layers
 profner = {
     "name": "profner",
     "features": {
@@ -71,8 +65,6 @@ profner = {
     },
 }
 
-# In[ ]:
-
 trainer_config = dict(
     optimizer={
         "type": "adamw",
@@ -84,11 +76,8 @@ trainer_config = dict(
     training_size=len(train_ds),
     batch_size=tune.choice([8, 16, 32]),
     num_epochs=tune.choice([4, 5, 6, 7]),
-    validation_metric="+ner/f1-measure-overall"
+    validation_metric="+valid_ner/f1-measure-overall"
 )
-
-
-# In[ ]:
 
 
 from ray.tune.suggest.hyperopt import HyperOptSearch
@@ -103,9 +92,6 @@ search_alg = HyperOptSearch(metric="validation_ner/f1-measure-overall", mode="ma
 # search_alg = HEBOSearch(metric="validation_ner/f1-measure-overall", mode="max")
 
 
-# In[ ]:
-
-
 random_search = TuneExperiment(
     pipeline_config=profner,
     trainer_config=trainer_config,
@@ -118,18 +104,15 @@ random_search = TuneExperiment(
 )
 
 
-# In[ ]:
-
-
 analysis = tune.run(
     random_search,
     config=random_search.config,
     scheduler=tune.schedulers.ASHAScheduler(),
     search_alg=search_alg,
-    metric="validation_ner/f1-measure-overall", 
+    metric="validation_valid_ner/f1-measure-overall",
     mode="max",
     progress_reporter=tune.CLIReporter(
-            metric_columns=["best_validation_ner/f1-measure-overall", "best_validation_classification/accuracy"],
+            metric_columns=["best_validation_valid_ner/f1-measure-overall", "best_validation_valid_classification/accuracy"],
             parameter_columns=["trainer.optimizer.lr"],
         ),
     # progress_reporter=tune.JupyterNotebookReporter(overwrite=True)
